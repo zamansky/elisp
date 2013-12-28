@@ -1,4 +1,6 @@
 
+(require 'json) ;; needed to process the results from zemanta
+
 (defcustom zemanta-api-key nil
   "Zemanta api key"
   :type '(string)'
