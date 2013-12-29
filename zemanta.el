@@ -9,16 +9,19 @@
 
 
 
-
-(defun zemanta-get-tags ()
-  ""
-  (interactive)
+(defun zemanta-get (links)
+  "If no prefex argument, use zemanta to get tags and either add them to the
+tags: frontmatter or make a new tags: frontmatter line. With a prefix argument, add the related links to the bottom of the document"
+  (interactive "p")
   (let* ( (url  "http://api.zemanta.com/services/rest/0.0/")
 	  (url-request-method "POST")
 	  ;; need to set args and request data
 	  ;; later since they need substitutions
-	  args url-request-data )
+	  args url-request-data callback)
     (progn
+      (if (> links 1)
+	  (setq callback 'zemanta-get-links-callback)
+	(setq callback 'zemanta-get-tags-callback))
       (setq args '(("method" . "zemanta.suggest")
 		   ("api_key" . "")
 		   ("text" . "")
@@ -34,15 +37,18 @@
 			       (url-hexify-string (cdr arg))))
 		     args
 		     "&"))
-      (print zemanta-api-key)
-      (url-retrieve url 'zemanta-get-tags-callback)))
+      (print callback)
+      (url-retrieve url callback)))
+
+
+
 
 
 
 (defun zemanta-get-tags-callback (status)
   "extracts the keywords and places them in a tag field in the jekyll post"
   (progn
-    (let ((json-object-type 'plist) jsondata)
+    (let ((json-object-type 'plist) jsondata words)
       (progn
 	;; find the start of the json and encode it into jdsondata
 	(search-forward "{")
@@ -72,8 +78,34 @@
 	    ))
 	  ;; add the tags
 	  (insert (mapconcat 'identity words " "))
+	  (insert "\n")
 	  ))))
 
 
 
 
+(defun zemanta-get-links-callback (status)
+  "extracts the keywords and places them in a tag field in the jekyll post"
+  (progn
+    (let ((json-object-type 'plist) jsondata articles titleurls)
+      (progn
+	;; find the start of the json and encode it into jdsondata
+	(search-forward "{")
+	(forward-char -1)
+	(setq jsondata (json-read))
+	;; convert the plist into a list of keywords
+	(setq articles (plist-get jsondata ':articles))
+	;;(setq titles (mapcar (lambda (x) (plist-get x ':title)) articles))
+	(setq titleurls (mapcar (lambda (x) 
+			       (cons (plist-get x ':title) (plist-get x ':url))) articles))
+	;; get to the post buffer
+	;; this is a kludge and I should figure out how it works
+	(kill-buffer (current-buffer))
+	(switch-to-buffer (current-buffer))
+	(switch-to-buffer (other-buffer))
+
+	(end-of-buffer)
+	(insert "\n")
+	(insert (mapconcat (lambda (x) 
+			     (format "[%s](%s)" (car x) (cdr x))) titleurls "\n"))
+))))
