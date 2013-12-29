@@ -1,7 +1,8 @@
 
 (require 'json) ;; needed to process the results from zemanta
 
-(defcustom zemanta-api-key nil
+
+(defcustom zemanta-api-key "zjllw8mgsmh7dxonivzedyis"
   "Zemanta api key"
   :type '(string)'
   :group 'zemanta)
@@ -33,6 +34,7 @@
 			       (url-hexify-string (cdr arg))))
 		     args
 		     "&"))
+      (print zemanta-api-key)
       (url-retrieve url 'zemanta-get-tags-callback)))
 
 
@@ -59,13 +61,18 @@
 	;; find the second --- line marking the bottom of data
 	(goto-char 1)
 	(search-forward "---")
-	(search-forward "---")
-	(beginning-of-line)
-	;; add the tags
-	(insert "tags: ")
-	(insert (mapconcat 'identity words " "))
-	(insert "\n")
-	))))
+	(if (search-forward "tags:" nil t) 
+	    (progn 
+	      (end-of-line)
+	      (insert " "))
+	  (progn
+	    (search-forward "---")
+	    (beginning-of-line)
+	    (insert "tags: ")
+	    ))
+	  ;; add the tags
+	  (insert (mapconcat 'identity words " "))
+	  ))))
 
 
 
