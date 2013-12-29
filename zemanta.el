@@ -19,9 +19,9 @@ tags: frontmatter or make a new tags: frontmatter line. With a prefix argument, 
 	  ;; later since they need substitutions
 	  args url-request-data callback)
     (progn
-      (if (> links 1)
-	  (setq callback 'zemanta-get-links-callback)
-	(setq callback 'zemanta-get-tags-callback))
+      (cond ((= links 16) (setq callback 'zemanta-get-images-callback))
+	    ((= links 4) (setq callback 'zemanta-get-links-callback))
+	    (t (setq callback 'zemanta-get-tags-callback)))
       (setq args '(("method" . "zemanta.suggest")
 		   ("api_key" . "")
 		   ("text" . "")
@@ -85,7 +85,7 @@ tags: frontmatter or make a new tags: frontmatter line. With a prefix argument, 
 
 
 (defun zemanta-get-links-callback (status)
-  "extracts the keywords and places them in a tag field in the jekyll post"
+  "extracts the zemanta links and titles and adds them as markdown links to the bottom of your post"
   (progn
     (let ((json-object-type 'plist) jsondata articles titleurls)
       (progn
@@ -98,6 +98,35 @@ tags: frontmatter or make a new tags: frontmatter line. With a prefix argument, 
 	;;(setq titles (mapcar (lambda (x) (plist-get x ':title)) articles))
 	(setq titleurls (mapcar (lambda (x) 
 			       (cons (plist-get x ':title) (plist-get x ':url))) articles))
+	;; get to the post buffer
+	;; this is a kludge and I should figure out how it works
+	(kill-buffer (current-buffer))
+	(switch-to-buffer (current-buffer))
+	(switch-to-buffer (other-buffer))
+
+	(end-of-buffer)
+	(insert "\n")
+	(insert (mapconcat (lambda (x) 
+			     (format "[%s](%s)" (car x) (cdr x))) titleurls "\n"))
+))))
+
+
+
+
+(defun zemanta-get-images-callback (status)
+  "extracts the zemanta images and descriptions and adds them as markdown links to the bottom of your post"
+  (progn
+    (let ((json-object-type 'plist) jsondata images titleurls)
+      (progn
+	;; find the start of the json and encode it into jdsondata
+	(search-forward "{")
+	(forward-char -1)
+	(setq jsondata (json-read))
+	;; convert the plist into a list of keywords
+	(setq images (plist-get jsondata ':images))
+	;;(setq titles (mapcar (lambda (x) (plist-get x ':title)) articles))
+	(setq titleurls (mapcar (lambda (x) 
+			       (cons (plist-get x ':description) (plist-get x ':source_url))) images))
 	;; get to the post buffer
 	;; this is a kludge and I should figure out how it works
 	(kill-buffer (current-buffer))
