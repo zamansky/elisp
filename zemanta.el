@@ -2,7 +2,7 @@
 (require 'json) ;; needed to process the results from zemanta
 
 
-(defcustom zemanta-api-key "zjllw8mgsmh7dxonivzedyis"
+(defcustom zemanta-api-key ""
   "Zemanta api key"
   :type '(string)'
   :group 'zemanta)
