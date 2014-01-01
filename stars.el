@@ -1,4 +1,5 @@
 
+
 (defun stars-region (start end) 
   "replace the region (assuming it's a number) with stars"
   (interactive "*r")
